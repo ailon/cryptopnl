@@ -58,6 +58,14 @@
         </div>
       </div>
 
+      <div class="row" v-show="errors.length > 0">
+        <div class="col-12">
+          <ul class="text-danger">
+            <li v-for="(error, index) in errors" :key="index">{{error}}</li>
+          </ul>
+        </div>
+      </div>
+
       <div class="row">
         <div class="col-12" style="max-height: 400px; overflow: scroll;"
           v-for="(cryptoProfitLog, cryptoIndex) in profitLog"
@@ -131,7 +139,8 @@ export default Vue.extend({
     return {
       tradeLog: new Array<TradeLogItem>(),
       profitLog: <CryptoProfitLog>{},
-      profitLogCsv: ""
+      profitLogCsv: "",
+      errors: new Array<string>()
     }
   },
   methods: {
@@ -174,18 +183,24 @@ export default Vue.extend({
 
         if (operation == 'BUY' || operation == 'SELL') {
           let timestamp = moment(item.time).toDate();
-          let crypto = item.pair.substr(1, 3);
+          let crypto = item.pair.length == 8 ? item.pair.substr(1, 3) : item.pair.substr(0, 3);
           crypto = crypto == 'XBT' ? 'BTC' : crypto;
+          let fiat = item.pair.length == 8 ?  item.pair.substr(5, 3) : item.pair.substr(3, 3);
           let volume = item.vol;
           let price = operation == 'BUY' ? (item.cost + item.fee) / volume : (item.cost - item.fee) / volume;
 
-          this.tradeLog.push(new TradeLogItem(
-            timestamp,
-            crypto,
-            operation,
-            price,
-            volume
-          ));
+          if (['EUR', 'USD', 'GBP'].indexOf(fiat) > -1) {
+            this.tradeLog.push(new TradeLogItem(
+              timestamp,
+              crypto,
+              operation,
+              price,
+              volume
+            ));
+          }
+          else {
+            this.errors.push(`Pair not supported: ${crypto}/${fiat}, volume: ${volume} on ${timestamp}`);
+          }
         }
       });
 
@@ -268,7 +283,7 @@ export default Vue.extend({
         this.profitLog[crypto] = new Array<ProfitLogItem>();
 
         cryptoSellLog.forEach(sale => {
-          while (sale.volume > cryptoBuyLog[0].volume) {
+          while (cryptoBuyLog[0] && sale.volume > cryptoBuyLog[0].volume) {
             this.profitLog[crypto].push(new ProfitLogItem(
               sale.timestamp,
               sale.crypto,
@@ -283,18 +298,27 @@ export default Vue.extend({
             cryptoBuyLog.shift();
           }
 
+          let lastPrice = 0;
+          if (cryptoBuyLog[0]) {
+            lastPrice = cryptoBuyLog[0].price;
+          }
+          else {
+            this.errors.push(`Sell without buy: ${sale.crypto} on ${sale.timestamp}, unaccounted volume: ${sale.volume} at ${sale.price} logged as profit`);
+          }
           this.profitLog[crypto].push(new ProfitLogItem(
               sale.timestamp,
               sale.crypto,
-              cryptoBuyLog[0].price,
+              lastPrice,
               sale.price,
               sale.volume,
-              (sale.price - cryptoBuyLog[0].price) * sale.volume
+              (sale.price - lastPrice) * sale.volume
           ));
 
-          cryptoBuyLog[0].volume -= sale.volume;
-          if (cryptoBuyLog[0].volume == 0) {
-            cryptoBuyLog.shift();
+          if (cryptoBuyLog[0]) {
+            cryptoBuyLog[0].volume -= sale.volume;
+            if (cryptoBuyLog[0].volume == 0) {
+              cryptoBuyLog.shift();
+            }
           }
         });
 
