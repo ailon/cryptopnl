@@ -265,6 +265,7 @@ export default Vue.extend({
         let operation = item.type.toUpperCase();
 
         if (operation == 'BUY' || operation == 'SELL') {
+          let transactionId = item.txid;
           let timestamp = moment(item.time).toDate();
           let crypto = item.pair.length == 8 ? item.pair.substr(1, 3) : item.pair.substr(0, 3);
           crypto = crypto == 'XBT' ? 'BTC' : crypto;
@@ -274,6 +275,8 @@ export default Vue.extend({
 
           if (['EUR', 'USD', 'GBP'].indexOf(fiat) > -1) {
             this.tradeLog.push(new TradeLogItem(
+              'kraken',
+              transactionId,
               timestamp,
               crypto,
               operation,
@@ -324,6 +327,7 @@ export default Vue.extend({
 
           if (operation == 'BUY' || operation == 'SELL') {
             let timestamp = moment(item.Datetime, 'MMM. DD, YYYY, hh:mm A').toDate();
+            let transactionId = moment(timestamp).format('YYYYMMDDHHmmss');
             let crypto = item.Amount.substr(item.Amount.length - 3, 3);
             let volume = parseFloat(item.Amount.substr(0, item.Amount.length - 4));
             let fee = item.Fee.length > 4 ? parseFloat(item.Fee.substr(0, item.Fee.length - 4)) : 0;
@@ -331,6 +335,8 @@ export default Vue.extend({
             let price = operation == 'BUY' ? (value + fee) / volume : (value - fee) / volume;
 
             this.tradeLog.push(new TradeLogItem(
+              'bitstamp',
+              transactionId,
               timestamp,
               crypto,
               operation,
@@ -372,7 +378,11 @@ export default Vue.extend({
             this.profitLog[crypto].push(new ProfitLogItem(
               sale.timestamp,
               sale.crypto,
+              cryptoBuyLog[0].platform,
+              cryptoBuyLog[0].transactionId,
               cryptoBuyLog[0].price,
+              sale.platform,
+              sale.transactionId,
               sale.price,
               cryptoBuyLog[0].volume,
               (sale.price - cryptoBuyLog[0].price) * cryptoBuyLog[0].volume
@@ -384,8 +394,12 @@ export default Vue.extend({
           }
 
           let lastPrice = 0;
+          let lastBuyPlatform = "-";
+          let lastBuyTransactionId = "-";
           if (cryptoBuyLog[0]) {
             lastPrice = cryptoBuyLog[0].price;
+            lastBuyPlatform = cryptoBuyLog[0].platform;
+            lastBuyTransactionId = cryptoBuyLog[0].transactionId;
           }
           else {
             this.errors.push(`Sell without buy: ${sale.crypto} on ${sale.timestamp}, unaccounted volume: ${sale.volume} at ${sale.price} logged as profit`);
@@ -393,7 +407,11 @@ export default Vue.extend({
           this.profitLog[crypto].push(new ProfitLogItem(
               sale.timestamp,
               sale.crypto,
+              lastBuyPlatform,
+              lastBuyTransactionId,
               lastPrice,
+              sale.platform,
+              sale.transactionId,
               sale.price,
               sale.volume,
               (sale.price - lastPrice) * sale.volume

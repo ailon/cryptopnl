@@ -1,4 +1,5 @@
 export interface KrakenLogItem {
+    txid: string;
     cost: number;
     fee: number;
     pair: string;
