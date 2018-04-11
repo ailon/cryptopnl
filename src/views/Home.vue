@@ -15,14 +15,37 @@
         <h2 class="card-header">Important</h2>
         <div class="card-body">
           <h5 class="card-title">Please read carefully before proceeding...</h5>
-          <p class="card-text">With supporting text below as a natural lead-in to additional content.</p>
+          <p>This tool can help you calculate profits/losses from your cryptocurrency trading logs according to 
+            <a href="https://en.wikipedia.org/wiki/FIFO_and_LIFO_accounting">FIFO accounting method</a>. 
+            It is limited in scope and currently supports logs from Kraken and Bitstamp exchanges only.
+          </p>
+          <p><b>THE GOOD</b></p>
           <ul>
-            <li>Limitation...</li>
-            <li>Limitation...</li>
+            <li>Crypto P&amp;L is 100% client-side &mdash; none of your data is sent to any servers.</li>
+            <li>It calculates your profit/losses according to FIFO accounting method as most tax authorities would like you to do it.</li>
+            <li><a href="https://github.com/ailon/cryptopnl">It's open-source</a> &mdash; you can add missing functionality (see below).</li>
           </ul>
-          <button class="btn btn-success" @click.prevent="goToLogStep">I understand and this works for me, let's proceed!</button>
-          <p class="mt-2"><a href="#">This doesn't work for me and I can write JavaScript/TypeScript</a></p>
-          <p class="small">Doesn't work for you and not a developer? <a href="mailto:#">Send me an email</a> if you'd like to sponsor a generally useful feature.</p>
+          <p><b>THE BAD</b> (known issues and limitations)</p>
+          <ul>
+            <li>I made this for myself so it only does what I need it to do and nothing else.</li>
+            <li>Crypto P&amp;L supports logs from Kraken and Bitstamp exchanges only.</li>
+            <li>It only works with crypto-fiat transactions. All crypto-crypto transactions will be discarded (with a warning).</li>
+            <li>It assumes all transactions use the same fiat currency.</li>
+            <li>It assumes all purchases of cryptocurrencies happened on supported platforms and are represented in the source logs. 
+              Sales exceeding purchases will be counted as profit. You can probably amend your logs with "fake" initial transactions to mitigate this.</li>
+            <li>It doesn't check that sales happen after purchases. So, if not all purchases are accounted for it will not calculate correctly.</li>
+            <li>I've only tested it with logs from 2 people, so there could be issues unaccounted for due to limited sample size.</li>
+            <li>Crypto P&amp;L is open-source but it was quickly hacked together as a one-off app. 
+              You can totally modify and improve it but be warned that the code is ugly ;)</li>
+          </ul>
+          <p><b>THE DISCLAIMER</b></p>
+          <ul>
+            <li style="text-transform: uppercase; font-weight: bold;">Crypto P&amp;L is an experimental piece of software and is provided to you as-is without any warranties whatsoever. 
+              Under no circumstances should I be held liable for any damage it may cause you.</li>
+          </ul>
+          <button class="btn btn-success btn-lg" @click.prevent="goToLogStep">I understand and this works for me, let's proceed!</button>
+          <p class="mt-2"><a href="https://github.com/ailon/cryptopnl">This doesn't work for me and I can write JavaScript/TypeScript</a></p>
+          <p class="small">Doesn't work for you and not a developer? <a href="mailto:cryptopnl@outlook.com?subject=CryptoPnL">Send me an email</a> if you'd like to sponsor a generally useful feature.</p>
         </div>
       </div>        
 
@@ -177,6 +200,14 @@
       <div class="col-12"><a href="/">start over</a></div>
     </div>
 
+    <footer class="mt-5">
+      <hr />
+      <div class="row">
+        <div class="col-12 text-center small text-muted">
+          &copy; 2018 by Alan Mendelevich
+        </div>
+      </div>
+    </footer>
   </div>
 </template>
 
