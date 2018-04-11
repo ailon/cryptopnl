@@ -171,8 +171,12 @@
           </div>
         </div>
       </section>
-      
     </form>
+
+    <div class="row my-3" v-show="step != 'intro'">
+      <div class="col-12"><a href="/">start over</a></div>
+    </div>
+
   </div>
 </template>
 
