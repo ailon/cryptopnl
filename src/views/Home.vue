@@ -28,7 +28,7 @@
 
       <div class="card border-danger mb-2" v-show="errors.length > 0">
         <div class="card-header">
-          Errors processing: <a href="#" @click.prevent="showErrorDetails = !showErrorDetails">{{ errors.length }}</a>
+          Issues processing: <a href="#" @click.prevent="showErrorDetails = !showErrorDetails">{{ errors.length }}</a>
         </div>
         <div class="card-body" v-show="showErrorDetails">
           <ul class="text-danger">
@@ -74,7 +74,7 @@
             Log items processed: <a href="#" @click.prevent="showTradeLog = !showTradeLog">{{ tradeLog.length }}</a>
           </div>
           <div class="card-body" v-show="showTradeLog">
-            <table class="table table-sm">
+            <table class="table table-sm table-responsive">
               <thead>
                 <tr>
                   <th scope="col">#</th>
@@ -108,49 +108,66 @@
       </section>
 
       <section id="resultsSection" v-show="step == 'results'">
-        <div class="row">
-          <div class="col-12" style="max-height: 400px; overflow: scroll;"
-            v-for="(cryptoProfitLog, cryptoIndex) in profitLog"
-            :key="cryptoIndex"
-          >
+        <div class="row mt-4">
+          <div class="col-12"><h3>Profits/losses by cryptocurrency</h3></div>
+        </div>
 
-          <h2>{{ cryptoIndex }}: {{getCryptoProfit(cryptoProfitLog)}}</h2>
+        <div class="card" 
+          v-for="(cryptoProfitLog, cryptoIndex, index) in profitLog"
+          :key="cryptoIndex"
+          v-show="cryptoProfitLog.length > 0"
+        >
 
-          <table class="table table-sm">
-            <thead>
-              <tr>
-                <th scope="col">#</th>
-                <th scope="col">Date</th>
-                <th scope="col">Volume</th>
-                <th scope="col">Buy Price</th>
-                <th scope="col">Sell Price</th>
-                <th scope="col">Total</th>
-                <th scope="col">Profit/Loss</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="(trade, index) in cryptoProfitLog"
-                :key="index"
-              >
-                <th scope="row">{{ index + 1 }}</th>
-                <td>{{ formatDate(trade.timestamp) }}</td>
-                <td>{{ trade.volume }}</td>
-                <td>{{ trade.buyPrice }}</td>
-                <td>{{ trade.sellPrice }}</td>
-                <td>{{ trade.volume * trade.sellPrice }}</td>
-                <td>{{ trade.profit }}</td>
-              </tr>
-            </tbody>
-          </table>
-
+          <div class="card-header">
+            <h4><a href="#" @click.prevent="toggleCryptProfitLog(index)">{{ cryptoIndex }}</a>: {{getCryptoProfit(cryptoProfitLog)}}</h4>
+          </div>
+          <div class="card-body" v-show="showCryptoProfitLog[index]">
+            <table class="table table-sm table-responsive">
+              <thead>
+                <tr>
+                  <th scope="col">#</th>
+                  <th scope="col">Date</th>
+                  <th scope="col">Volume</th>
+                  <th scope="col">Buy Price</th>
+                  <th scope="col">Sell Price</th>
+                  <th scope="col">Total</th>
+                  <th scope="col">Profit/Loss</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(trade, index) in cryptoProfitLog"
+                  :key="index"
+                >
+                  <th scope="row">{{ index + 1 }}</th>
+                  <td>{{ formatDate(trade.timestamp) }}</td>
+                  <td>{{ trade.volume }}</td>
+                  <td>{{ trade.buyPrice }}</td>
+                  <td>{{ trade.sellPrice }}</td>
+                  <td>{{ trade.volume * trade.sellPrice }}</td>
+                  <td>{{ trade.profit }}</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
 
-          <h1>Total profit/loss: {{ getTotalProfit() }}</h1>
+        </div>
+
+        <div class="row my-5">
           <div class="col-12">
-            <div class="form-group">
-              <label for="profitLogCsv">Profit log CSV</label>
-              <textarea class="form-control" id="profitLogCsv" rows="8" v-model="profitLogCsv"></textarea>
-            </div>
+            <h2>Total profit/loss: {{ totalProfit }}</h2>
+          </div>
+          <div class="col-12">
+            <a href="#" @click.prevent="showProfitLogCsv = !showProfitLogCsv">Profit log TSV</a>
+            <textarea class="form-control" id="profitLogCsv" rows="8" v-model="profitLogCsv" v-show="showProfitLogCsv"></textarea>
+          </div>
+        </div>
+        <div class="card text-center text-white bg-dark mt-4">
+          <div class="card-body">
+            <p class="lead" v-if="totalProfit > 0"><b>Congratulations on your profit!</b><br />Please, consider donating 0.5% or whatever you feel appropriate for the time this tool saved you. Thank you!</p>
+            <p class="lead" v-else><b>No profit but look on the bright side &mdash; no taxes either!</b><br />Please, consider donating whatever you feel appropriate for the time this tool saved you. Thank you!</p>
+
+            <a class="btn btn-primary btn-lg"
+            :href="`https://www.paypal.me/ailonid/${totalProfit >= 1000 ? Math.round(totalProfit * 0.005) : 5}`">Donate via PayPal</a>
           </div>
         </div>
       </section>
@@ -168,7 +185,6 @@ import { ProfitLogItem } from '@/models/ProfitLogItem.ts';
 import { KrakenLogItem } from '@/models/KrakenLogItem.ts';
 import { BitstampLogItem } from '@/models/BitstampLogItem.ts';
 import { CryptoProfitLog } from '@/models/CryptoProfitLog.ts';
-//import HelloWorld from '@/components/HelloWorld.vue'; // @ is an alias to /src
 
 let logFile: File;
 
@@ -184,9 +200,12 @@ export default Vue.extend({
       tradeLog: new Array<TradeLogItem>(),
       showTradeLog: false,
       profitLog: <CryptoProfitLog>{},
+      showCryptoProfitLog: new Array<boolean>(),
       profitLogCsv: "",
+      showProfitLogCsv: false,
       errors: new Array<string>(),
-      showErrorDetails: false
+      showErrorDetails: false,
+      totalProfit: 0
     }
   },
   methods: {
@@ -329,7 +348,7 @@ export default Vue.extend({
 
     calculatePnL: function() {
       this.step = "results";
-      
+
       this.tradeLog.sort((a, b) => { return (a.timestamp < b.timestamp ? -1 : 1) });
 
       // get all currencies
@@ -391,6 +410,13 @@ export default Vue.extend({
         // console.log(this.profitLog);
       });
 
+      // reset profit log display
+      this.showCryptoProfitLog.splice(0);
+      for (let crypto in this.profitLog) {
+        this.showCryptoProfitLog.push(false);
+      }
+
+      // create flat log for export
       let flatProfitLog = new Array<ProfitLogItem>();
       for (let crypto in this.profitLog) {
         flatProfitLog = flatProfitLog.concat(this.profitLog[crypto]);
@@ -400,6 +426,11 @@ export default Vue.extend({
 
       this.profitLogCsv = Papa.unparse(flatProfitLog, { delimiter: '\t' });
 
+      this.totalProfit = Math.round(this.getTotalProfit() * 100) / 100;
+    },
+
+    toggleCryptProfitLog: function(index: number) {
+      Vue.set(this.showCryptoProfitLog, index, !this.showCryptoProfitLog[index]);
     },
 
     getCryptoProfit: function(cryptoProfitLog: ProfitLogItem[]): number {
@@ -407,7 +438,7 @@ export default Vue.extend({
       cryptoProfitLog.forEach(sale => {
         profit += sale.profit;
       });
-      return profit;
+      return Math.round(profit * 100) / 100;
     },
 
     getTotalProfit: function(): number {
@@ -428,5 +459,7 @@ export default Vue.extend({
 .home {
   background-color: #ffffff;
   border: 1px solid #eeeeee;
+  padding-top: 1rem;
+  padding-bottom: 2rem;
 }
 </style>
