@@ -178,6 +178,10 @@
         <div class="row my-5">
           <div class="col-12">
             <h2>Total profit/loss: {{ totalProfit }}</h2>
+            <ul>
+              <li><b>Total costs</b>: {{ totalCosts }}</li>
+              <li><b>Total revenue</b>: {{ totalRevenue }} </li>
+            </ul>
           </div>
           <div class="col-12">
             <a href="#" @click.prevent="showProfitLogCsv = !showProfitLogCsv">Profit log TSV</a>
@@ -240,7 +244,9 @@ export default Vue.extend({
       showProfitLogCsv: false,
       errors: new Array<string>(),
       showErrorDetails: false,
-      totalProfit: 0
+      totalProfit: 0,
+      totalCosts: 0,
+      totalRevenue: 0
     }
   },
   methods: {
@@ -479,7 +485,7 @@ export default Vue.extend({
 
       this.profitLogCsv = Papa.unparse(flatProfitLog, { delimiter: '\t' });
 
-      this.totalProfit = Math.round(this.getTotalProfit() * 100) / 100;
+      this.setTotalProfit();
     },
 
     toggleCryptProfitLog: function(index: number) {
@@ -494,12 +500,20 @@ export default Vue.extend({
       return Math.round(profit * 100) / 100;
     },
 
-    getTotalProfit: function(): number {
-      let profit = 0;
+    setTotalProfit: function() {
+      this.totalCosts = 0;
+      this.totalRevenue = 0;
+
       for (let cryptoProfitLog in this.profitLog) {
-        profit += this.getCryptoProfit(this.profitLog[cryptoProfitLog]);
+        this.profitLog[cryptoProfitLog].forEach(sale => {
+          this.totalCosts += sale.buyPrice * sale.volume;
+          this.totalRevenue += sale.sellPrice * sale.volume;
+        })
       }
-      return profit;
+
+      this.totalProfit = Math.round((this.totalRevenue - this.totalCosts) * 100) / 100;
+      this.totalCosts = Math.round(this.totalCosts * 100) / 100;
+      this.totalRevenue = Math.round(this.totalRevenue * 100) / 100;
     },
 
     formatDate(date: Date): string {
